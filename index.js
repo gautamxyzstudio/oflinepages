@@ -1,18 +1,27 @@
 const fs = require('fs');
 const { exec } = require('child_process');
+const path = require('path');
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Delay range
 const MIN_DELAY = 500;
 const MAX_DELAY = 1500;
 
-const urls = fs.readFileSync('urls.txt', 'utf-8')
+// Sleep function
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Read URLs from file
+const urlsPath = path.resolve(__dirname, 'urls.txt');
+const urls = fs.readFileSync(urlsPath, 'utf-8')
   .split('\n')
   .map(line => line.trim())
   .filter(Boolean);
 
-const offlineDir = 'offline_listings';
+// Use ENV variable or fallback to local folder
+const offlineDir = process.env.OFFLINE_DIR || path.resolve(__dirname, 'offline_listings');
+
+// Ensure directory exists
 if (!fs.existsSync(offlineDir)) {
-  fs.mkdirSync(offlineDir);
+  fs.mkdirSync(offlineDir, { recursive: true });
 }
 
 (async () => {
@@ -23,12 +32,12 @@ if (!fs.existsSync(offlineDir)) {
     count++;
     console.log(`📥 [${count}/${total}] Downloading full page with media: ${url}`);
 
-    const cmd = `wget --convert-links --adjust-extension --page-requisites --no-parent --span-hosts --timeout=20 --tries=2 --user-agent="Mozilla/5.0" --directory-prefix=${offlineDir} "${url}"`;
+    const cmd = `wget --convert-links --adjust-extension --page-requisites --no-parent --span-hosts --timeout=20 --tries=2 --user-agent="Mozilla/5.0" --directory-prefix="${offlineDir}" "${url}"`;
 
     await new Promise((resolve) => {
       exec(cmd, (error, stdout, stderr) => {
         if (error) {
-          console.error(`❌ Error downloading ${url}:`, error.message);
+          console.error(`❌ Error downloading ${url}: ${error.message}`);
         } else {
           console.log(`✅ [${count}/${total}] Downloaded successfully.`);
         }
@@ -41,5 +50,5 @@ if (!fs.existsSync(offlineDir)) {
     await sleep(delay);
   }
 
-  console.log(`🎉 Done! Downloaded ${count} of ${total} pages for offline use.`);
+  console.log(`🎉 Done! Downloaded ${count} of ${total} pages to: ${offlineDir}`);
 })();
