@@ -9,11 +9,11 @@ WORKDIR /usr/src/app
 # Copy project files
 COPY . .
 
-# Create output directory
+# Create output directory where pages will be saved
 RUN mkdir -p /data/offline_listings
 
-# Optional: run download during build (can skip if you want to run every start)
-# RUN node index.js
+# Set environment variable so index.js saves directly to correct location
+ENV OFFLINE_DIR=/data/offline_listings
 
-# Default command: run script + serve folder
+# Default command: download pages and serve them
 CMD sh -c "node index.js && serve /data/offline_listings -l 8979"
